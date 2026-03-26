@@ -312,7 +312,7 @@ const DashboardPage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
              {/* Секция статистики */}
-             <div className="lg:col-span-4">
+             <div className={isTeamLeader ? "lg:col-span-4" : "lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6"}>
                 <motion.button 
                    whileHover={{ y: -5, scale: 1.01 }}
                    whileTap={{ scale: 0.98 }}
@@ -344,16 +344,44 @@ const DashboardPage: React.FC = () => {
                       )}
                    </div>
                 </motion.button>
+
+                {!isTeamLeader && (
+                  <motion.button 
+                    whileHover={{ y: -5, scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="premium-glass p-8 rounded-[40px] border border-white/60 bg-white/40 shadow-xl shadow-slate-200/40 relative overflow-hidden group text-left w-full cursor-pointer h-full"
+                  >
+                    <div className="absolute -right-4 -top-4 w-24 h-24 bg-accent/5 rounded-full transition-transform group-hover:scale-150 duration-700" />
+                    <div className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Твой уровень</div>
+                    <div className="flex items-baseline gap-2">
+                        <div className="text-5xl font-black text-slate-900 tracking-tighter">1</div>
+                        <div className="text-slate-400 font-bold">Level</div>
+                    </div>
+                    <div className="mt-5 space-y-2">
+                        <div className="h-2.5 w-full bg-slate-100/80 rounded-full overflow-hidden border border-slate-200/50">
+                          <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: '25%' }}
+                              transition={{ duration: 1, delay: 0.5 }}
+                              className="h-full bg-gradient-to-r from-primary to-accent" 
+                          />
+                        </div>
+                    </div>
+                  </motion.button>
+                )}
              </div>
 
              {/* Секция основных действий */}
-             <div className="lg:col-span-8">
+             <div className={isTeamLeader ? "lg:col-span-8" : "lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6"}>
                 <motion.button 
                    whileHover={{ y: -8, scale: 1.02 }}
                    whileTap={{ scale: 0.98 }}
                    onClick={() => navigate('/simulator')}
                    className="p-8 rounded-[40px] bg-slate-900 border border-white/10 shadow-2xl shadow-slate-900/80 relative overflow-hidden group cursor-pointer text-left w-full transition-all flex flex-col justify-between min-h-[320px]"
                 >
+                   {!isTeamLeader && (
+                     <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                   )}
                    <div className="absolute -right-6 -bottom-6 text-white/5 group-hover:text-primary/10 group-hover:rotate-12 transition-all duration-700">
                       <BrainCircuit className="w-48 h-48" strokeWidth={1} />
                    </div>
@@ -386,6 +414,31 @@ const DashboardPage: React.FC = () => {
                       </div>
                    </div>
                 </motion.button>
+
+                {!isTeamLeader && (
+                  <motion.button 
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate('/chat')}
+                    className="p-8 rounded-[40px] bg-gradient-to-br from-primary to-primary/80 border border-white/20 shadow-2xl shadow-primary/30 relative overflow-hidden group cursor-pointer text-left w-full flex flex-col justify-between min-h-[320px]"
+                  >
+                    <div className="absolute -right-6 -bottom-6 text-white/10 group-hover:rotate-12 transition-transform duration-500">
+                        <Sparkles className="w-48 h-48" strokeWidth={1} />
+                    </div>
+                    
+                    <div className="relative z-10">
+                        <div className="text-[11px] font-black text-white/60 uppercase tracking-[0.2em] mb-6">AI Ассистент</div>
+                        <h4 className="text-3xl font-black text-white tracking-tighter leading-none mb-2">Чат с ментором</h4>
+                        <p className="text-white/70 text-sm font-medium leading-snug max-w-[180px]">Получи мгновенную помощь по любому вопросу</p>
+                    </div>
+
+                    <div className="relative z-10 mt-auto">
+                        <div className="bg-white/20 group-hover:bg-white p-3 rounded-2xl inline-flex shadow-inner transition-all duration-300">
+                          <ArrowRight className="text-white group-hover:text-primary w-5 h-5 transition-transform group-hover:translate-x-1" />
+                        </div>
+                    </div>
+                  </motion.button>
+                )}
              </div>
           </div>
 
