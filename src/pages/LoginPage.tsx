@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { 
   User, 
-  Building2, 
+  Users, 
   ArrowRight, 
   Mail, 
   Lock,
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
-  const [role, setRole] = useState<'employee' | 'company'>('employee');
+  const [role, setRole] = useState<'employee' | 'teamleader'>('employee');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -33,7 +33,8 @@ const LoginPage: React.FC = () => {
       });
 
       if (error) throw error;
-      if (data.session) {
+      
+      if (data.user) {
         navigate('/dashboard');
       }
     } catch (err: any) {
@@ -111,15 +112,15 @@ const LoginPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setRole('company')}
+                onClick={() => setRole('teamleader')}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold transition-all duration-300 ${
-                  role === 'company' 
+                  role === 'teamleader' 
                     ? 'bg-white text-primary shadow-sm' 
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                <Building2 size={18} />
-                <span>Компания</span>
+                <Users size={18} />
+                <span>Тимлидер</span>
               </button>
             </div>
 

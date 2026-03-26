@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { 
   User, 
-  Building2, 
+  Users, 
   ArrowRight, 
   ShieldCheck, 
   Key, 
@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 const RegisterPage: React.FC = () => {
-  const [role, setRole] = useState<'employee' | 'company'>('employee');
+  const [role, setRole] = useState<'employee' | 'teamleader'>('employee');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -42,9 +42,9 @@ const RegisterPage: React.FC = () => {
             role: role,
             first_name: firstName,
             last_name: lastName,
-            invite_code: role === 'employee' ? inviteCode : null,
-            company_name: role === 'company' ? companyName : null,
-            platform_invite: role === 'company' ? platformInvite : null,
+            // Для совместимости со старыми триггерами (если они есть),
+            // мы можем передать company_name, даже если это teamleader.
+            company_name: companyName,
           }
         }
       });
@@ -52,10 +52,34 @@ const RegisterPage: React.FC = () => {
       if (error) throw error;
       
       if (data.user) {
-        alert('Регистрация успешна! Проверьте почту или попробуйте войти!');
+        // Если это тимлидер, записываем его в отдельную таблицу
+        if (role === 'teamleader') {
+          try {
+            const { error: insertError } = await supabase
+              .from('team_leaders')
+              .insert({
+                id: data.user.id,
+                first_name: firstName,
+                last_name: lastName,
+                company_name: companyName,
+                email: email
+              });
+
+            if (insertError) {
+              console.error("DEBUG: Ошибка вставки в team_leaders:", insertError);
+              // Если вставка не удалась, НЕ ПРЕРЫВАЕМ регистрацию, а просто предупреждаем
+              alert(`Внимание: аккаунт создан, но возникла ошибка при записи в профиль: ${insertError.message}`);
+            }
+          } catch (tableErr) {
+            console.error("DEBUG: Критическая ошибка таблицы:", tableErr);
+          }
+        }
+
+        alert('Регистрация успешна! Проверьте почту (если включено подтверждение) или попробуйте войти!');
         navigate('/login');
       }
     } catch (err: any) {
+      console.error("DEBUG: Ошибка signUp:", err);
       setError(err.message || 'Ошибка регистрации.');
     } finally {
       setLoading(false);
@@ -86,19 +110,19 @@ const RegisterPage: React.FC = () => {
             <h2 className="text-5xl font-extrabold leading-[1.1] text-slate-900">
               {role === 'employee' 
                 ? "Начни путь в компании уверенно" 
-                : "Создай идеальную среду адаптации"}
+                : "Управляй командой эффективно"}
             </h2>
             <p className="text-lg text-slate-600 leading-relaxed max-w-md">
               {role === 'employee'
                 ? "Решай реальные задачи с поддержкой AI-ментора. Никакого страха сделать ошибку — только развитие."
-                : "Автоматизируйте онбординг, переносите опыт лучших сотрудников в интерактивные таски."}
+                : "Автоматизируй онбординг своей команды и отслеживай их прогресс в реальном времени."}
             </p>
           </div>
 
           <div className="space-y-4">
             {[
-              "AI-ментор на базе GPT-4o",
-              "Симулятор реальных рабочих задач",
+              role === 'employee' ? "AI-ментор на базе GPT-4o" : "Статистика обучения команды",
+              role === 'employee' ? "Симулятор реальных задач" : "Управление контентом онбординга",
               role === 'employee' ? "Мгновенная связь с куратором" : "Аналитика прогресса новичков"
             ].map((text, i) => (
               <motion.div 
@@ -139,15 +163,15 @@ const RegisterPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setRole('company')}
+              onClick={() => setRole('teamleader')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all duration-300 ${
-                role === 'company' 
+                role === 'teamleader' 
                   ? 'bg-white text-primary shadow-lg shadow-primary/5' 
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              <Building2 size={18} />
-              <span>Компания</span>
+              <Users size={18} />
+              <span>Тимлидер</span>
             </button>
           </div>
 
@@ -215,7 +239,7 @@ const RegisterPage: React.FC = () => {
                   </motion.div>
                 ) : (
                   <motion.div
-                    key="company-fields"
+                    key="teamleader-fields"
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
@@ -223,9 +247,9 @@ const RegisterPage: React.FC = () => {
                     className="space-y-4"
                   >
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Название проекта</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Название компании</label>
                       <div className="relative group">
-                        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
+                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
                         <input 
                           type="text" 
                           placeholder="Напр. Verigram" 
@@ -237,7 +261,7 @@ const RegisterPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Промокод / Инвайт</label>
+                      <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Код доступа Тимлидера</label>
                       <div className="relative group">
                         <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={20} />
                         <input 

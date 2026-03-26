@@ -3,20 +3,202 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { 
   LogOut, 
-  LayoutDashboard, 
-  User, 
   Settings, 
   Bell,
   Sparkles,
   ArrowRight,
   ChevronRight,
   BrainCircuit,
-  Zap
+  Zap,
+  FileUp,
+  X,
+  Plus,
+  Paperclip
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const UploadTaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [solution, setSolution] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [taskFile, setTaskFile] = useState<File | null>(null);
+  const [solutionFile, setSolutionFile] = useState<File | null>(null);
+  
+  const taskFileRef = React.useRef<HTMLInputElement>(null);
+  const solutionFileRef = React.useRef<HTMLInputElement>(null);
+
+  const handleSave = () => {
+    if (!title || !category || (!description && !taskFile) || (!solution && !solutionFile)) return;
+    setIsSaving(true);
+    
+    const newTask = {
+      id: window.crypto.randomUUID(),
+      title,
+      category,
+      description,
+      solution,
+      taskFileName: taskFile?.name,
+      solutionFileName: solutionFile?.name,
+      author: 'Тимлидер',
+      createdAt: new Date().toISOString()
+    };
+
+    const existingTasks = JSON.parse(localStorage.getItem('custom_tasks') || '[]');
+    localStorage.setItem('custom_tasks', JSON.stringify([...existingTasks, newTask]));
+
+    setTimeout(() => {
+      setIsSaving(false);
+      onClose();
+      // Очистка полей
+      setTitle('');
+      setCategory('');
+      setDescription('');
+      setSolution('');
+      setTaskFile(null);
+      setSolutionFile(null);
+    }, 1000);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="relative w-full max-w-xl bg-white rounded-[32px] shadow-2xl border border-white/20 overflow-hidden flex flex-col max-h-[90vh]"
+          >
+            {/* Header - Fixed */}
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+              <div className="space-y-0.5">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tighter leading-none">Новое задание</h2>
+                <p className="text-[13px] text-slate-500 font-medium">Заполните данные или прикрепите файлы</p>
+              </div>
+              <button 
+                onClick={onClose}
+                className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400 hover:text-slate-900"
+              >
+                <X size={20} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Content - Scrollable */}
+            <div className="p-6 overflow-y-auto space-y-5 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Название</label>
+                  <input 
+                    type="text" 
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Напр: Оптимизация"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold text-sm text-slate-800 placeholder:text-slate-300"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Категория</label>
+                  <input 
+                    type="text" 
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="Напр: Backend"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold text-sm text-slate-800 placeholder:text-slate-300"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Описание задачи</label>
+                  <button 
+                    onClick={() => taskFileRef.current?.click()}
+                    className="flex items-center gap-1.5 text-[10px] font-black text-primary hover:text-primary-dark uppercase tracking-widest transition-colors"
+                  >
+                    <Paperclip size={12} />
+                    {taskFile ? 'Файл выбран' : 'Прикрепить файл'}
+                  </button>
+                  <input type="file" ref={taskFileRef} className="hidden" onChange={(e) => setTaskFile(e.target.files?.[0] || null)} />
+                </div>
+                {taskFile && (
+                  <div className="px-3 py-2 bg-primary/5 border border-primary/10 rounded-xl flex items-center justify-between text-[11px] font-bold text-primary">
+                    <span className="truncate max-w-[200px]">{taskFile.name}</span>
+                    <button onClick={() => setTaskFile(null)}><X size={14} /></button>
+                  </div>
+                )}
+                <textarea 
+                  rows={2}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Опишите задачу здесь..."
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold text-sm text-slate-800 resize-none placeholder:text-slate-300"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Эталонное решение</label>
+                  <button 
+                    onClick={() => solutionFileRef.current?.click()}
+                    className="flex items-center gap-1.5 text-[10px] font-black text-primary hover:text-primary-dark uppercase tracking-widest transition-colors"
+                  >
+                    <Paperclip size={12} />
+                    {solutionFile ? 'Файл выбран' : 'Прикрепить файл'}
+                  </button>
+                  <input type="file" ref={solutionFileRef} className="hidden" onChange={(e) => setSolutionFile(e.target.files?.[0] || null)} />
+                </div>
+                {solutionFile && (
+                  <div className="px-3 py-2 bg-green-50 border border-green-100 rounded-xl flex items-center justify-between text-[11px] font-bold text-green-600">
+                    <span className="truncate max-w-[200px]">{solutionFile.name}</span>
+                    <button onClick={() => setSolutionFile(null)}><X size={14} /></button>
+                  </div>
+                )}
+                <textarea 
+                  rows={3}
+                  value={solution}
+                  onChange={(e) => setSolution(e.target.value)}
+                  placeholder="Вставьте код или ответ..."
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold text-sm text-slate-800 resize-none placeholder:text-slate-300"
+                />
+              </div>
+            </div>
+
+            {/* Footer - Fixed */}
+            <div className="p-6 bg-slate-50 border-t border-slate-100 shrink-0">
+              <button 
+                onClick={handleSave}
+                disabled={isSaving || !title || !category || (!description && !taskFile) || (!solution && !solutionFile)}
+                className="w-full py-4 bg-primary hover:bg-primary-dark disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-2xl font-black text-base shadow-lg shadow-primary/20 transition-all hover:translate-y-[-2px] active:translate-y-0 flex items-center justify-center gap-2.5 group"
+              >
+                {isSaving ? (
+                  <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
+                    Опубликовать задание
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 const DashboardPage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,10 +229,12 @@ const DashboardPage: React.FC = () => {
   const firstName = user.user_metadata?.first_name || 'Сотрудник';
   const lastName = user.user_metadata?.last_name || '';
   const fullName = `${firstName} ${lastName}`.trim();
-  const roleDisplay = user.user_metadata?.role === 'company' ? 'Администратор' : 'Сотрудник';
+  const roleDisplay = user.user_metadata?.role === 'teamleader' ? 'Тимлидер' : 'Сотрудник';
+  const isTeamLeader = user.user_metadata?.role === 'teamleader';
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-primary/10">
+      <UploadTaskModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} />
       {/* Sidebar (Desktop) / Navbar (Mobile) */}
       <nav className="fixed top-0 left-0 right-0 h-20 bg-white/70 backdrop-blur-xl border-b border-slate-200/60 z-40 px-6 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
@@ -128,54 +312,48 @@ const DashboardPage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
              {/* Секция статистики */}
-             <div className="lg:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
+             <div className="lg:col-span-4">
                 <motion.button 
                    whileHover={{ y: -5, scale: 1.01 }}
                    whileTap={{ scale: 0.98 }}
-                   className="premium-glass p-8 rounded-[40px] border border-white/60 bg-white/40 shadow-xl shadow-slate-200/40 relative overflow-hidden group text-left w-full cursor-pointer h-full"
+                   onClick={() => isTeamLeader && setIsUploadModalOpen(true)}
+                   className="premium-glass p-8 rounded-[40px] border border-white/60 bg-white/40 shadow-xl shadow-slate-200/40 relative overflow-hidden group text-left w-full cursor-pointer h-full min-h-[220px]"
                 >
                    <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full transition-transform group-hover:scale-150 duration-700" />
-                   <div className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Активные задачи</div>
-                   <div className="text-5xl font-black text-slate-900 tracking-tighter">0</div>
+                   <div className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                      {isTeamLeader ? 'Управление задачами' : 'Активные задачи'}
+                   </div>
+                   <div className="text-5xl font-black text-slate-900 tracking-tighter flex items-center gap-3">
+                      {isTeamLeader ? (
+                         <FileUp className="w-12 h-12 text-primary" />
+                      ) : (
+                         '0'
+                      )}
+                   </div>
                    <div className="mt-4 flex items-center gap-2">
-                      <div className="px-2 py-0.5 bg-green-100 text-green-700 rounded-lg text-[10px] font-black uppercase">Completed</div>
-                      <div className="text-slate-400 text-[11px] font-bold">100% успеваемость</div>
-                   </div>
-                </motion.button>
-
-                <motion.button 
-                   whileHover={{ y: -5, scale: 1.01 }}
-                   whileTap={{ scale: 0.98 }}
-                   className="premium-glass p-8 rounded-[40px] border border-white/60 bg-white/40 shadow-xl shadow-slate-200/40 relative overflow-hidden group text-left w-full cursor-pointer h-full"
-                >
-                   <div className="absolute -right-4 -top-4 w-24 h-24 bg-accent/5 rounded-full transition-transform group-hover:scale-150 duration-700" />
-                   <div className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Твой уровень</div>
-                   <div className="flex items-baseline gap-2">
-                      <div className="text-5xl font-black text-slate-900 tracking-tighter">1</div>
-                      <div className="text-slate-400 font-bold">Level</div>
-                   </div>
-                   <div className="mt-5 space-y-2">
-                      <div className="h-2.5 w-full bg-slate-100/80 rounded-full overflow-hidden border border-slate-200/50">
-                         <motion.div 
-                           initial={{ width: 0 }}
-                           animate={{ width: '25%' }}
-                           transition={{ duration: 1, delay: 0.5 }}
-                           className="h-full bg-gradient-to-r from-primary to-accent" 
-                         />
-                      </div>
+                      {isTeamLeader ? (
+                         <>
+                            <div className="px-2 py-0.5 bg-primary/10 text-primary rounded-lg text-[10px] font-black uppercase">Team Lead Tool</div>
+                            <div className="text-slate-400 text-[11px] font-bold">Загрузить новый кейс</div>
+                         </>
+                      ) : (
+                         <>
+                            <div className="px-2 py-0.5 bg-green-100 text-green-700 rounded-lg text-[10px] font-black uppercase">Completed</div>
+                            <div className="text-slate-400 text-[11px] font-bold">100% успеваемость</div>
+                         </>
+                      )}
                    </div>
                 </motion.button>
              </div>
 
              {/* Секция основных действий */}
-             <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="lg:col-span-8">
                 <motion.button 
                    whileHover={{ y: -8, scale: 1.02 }}
                    whileTap={{ scale: 0.98 }}
                    onClick={() => navigate('/simulator')}
                    className="p-8 rounded-[40px] bg-slate-900 border border-white/10 shadow-2xl shadow-slate-900/80 relative overflow-hidden group cursor-pointer text-left w-full transition-all flex flex-col justify-between min-h-[320px]"
                 >
-                   <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                    <div className="absolute -right-6 -bottom-6 text-white/5 group-hover:text-primary/10 group-hover:rotate-12 transition-all duration-700">
                       <BrainCircuit className="w-48 h-48" strokeWidth={1} />
                    </div>
@@ -205,29 +383,6 @@ const DashboardPage: React.FC = () => {
                             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                          </div>
                          <span className="text-xs font-black text-white/60 group-hover:text-white transition-colors uppercase tracking-widest">Начать практику</span>
-                      </div>
-                   </div>
-                </motion.button>
-
-                <motion.button 
-                   whileHover={{ y: -8, scale: 1.02 }}
-                   whileTap={{ scale: 0.98 }}
-                   onClick={() => navigate('/chat')}
-                   className="p-8 rounded-[40px] bg-gradient-to-br from-primary to-primary/80 border border-white/20 shadow-2xl shadow-primary/30 relative overflow-hidden group cursor-pointer text-left w-full flex flex-col justify-between min-h-[320px]"
-                >
-                   <div className="absolute -right-6 -bottom-6 text-white/10 group-hover:rotate-12 transition-transform duration-500">
-                      <Sparkles className="w-48 h-48" strokeWidth={1} />
-                   </div>
-                   
-                   <div className="relative z-10">
-                      <div className="text-[11px] font-black text-white/60 uppercase tracking-[0.2em] mb-6">AI Ассистент</div>
-                      <h4 className="text-3xl font-black text-white tracking-tighter leading-none mb-2">Чат с ментором</h4>
-                      <p className="text-white/70 text-sm font-medium leading-snug max-w-[180px]">Получи мгновенную помощь по любому вопросу</p>
-                   </div>
-
-                   <div className="relative z-10 mt-auto">
-                      <div className="bg-white/20 group-hover:bg-white p-3 rounded-2xl inline-flex shadow-inner transition-all duration-300">
-                         <ArrowRight className="text-white group-hover:text-primary w-5 h-5 transition-transform group-hover:translate-x-1" />
                       </div>
                    </div>
                 </motion.button>

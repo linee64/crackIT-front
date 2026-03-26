@@ -32,6 +32,8 @@ interface Task {
   solution: string;
   author: string;
   category: string;
+  taskFileName?: string;
+  solutionFileName?: string;
 }
 
 interface UserProgress {
@@ -64,7 +66,19 @@ const MOCK_TASKS: Task[] = [
 export const AISimulator: React.FC = () => {
   const navigate = useNavigate();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS);
   const [currentTask, setCurrentTask] = useState<Task>(MOCK_TASKS[0]);
+
+  // Загрузка задач (MOCK + Custom)
+  useEffect(() => {
+    const customTasks = JSON.parse(localStorage.getItem('custom_tasks') || '[]');
+    const allTasks = [...MOCK_TASKS, ...customTasks];
+    setTasks(allTasks);
+    if (allTasks.length > 0) {
+      setCurrentTask(allTasks[0]);
+    }
+  }, []);
+
   const [userInput, setUserInput] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'hint' | 'success' | 'none', text: string }>({ type: 'none', text: '' });
@@ -131,8 +145,8 @@ export const AISimulator: React.FC = () => {
   };
 
   const nextTask = () => {
-    const nextIndex = (MOCK_TASKS.indexOf(currentTask) + 1) % MOCK_TASKS.length;
-    setCurrentTask(MOCK_TASKS[nextIndex]);
+    const nextIndex = (tasks.indexOf(currentTask) + 1) % tasks.length;
+    setCurrentTask(tasks[nextIndex]);
     setUserInput('');
     setFeedback({ type: 'none', text: '' });
   };
@@ -209,6 +223,18 @@ export const AISimulator: React.FC = () => {
               <p className="text-slate-600 leading-relaxed mb-8 font-medium text-lg">
                 {currentTask.description}
               </p>
+
+              {currentTask.taskFileName && (
+                <div className="mb-8 flex items-center gap-3 p-4 bg-primary/5 border border-primary/10 rounded-2xl w-fit">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary shadow-sm border border-primary/5">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Прикрепленный файл задачи</p>
+                    <p className="text-sm font-bold text-primary truncate max-w-[200px]">{currentTask.taskFileName}</p>
+                  </div>
+                </div>
+              )}
               
               <div className="flex items-center gap-4 p-4 bg-slate-50/80 rounded-2xl border border-slate-100/50">
                 <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm">

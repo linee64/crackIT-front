@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Sparkles, LogOut } from 'lucide-react';
+import { LayoutDashboard, Sparkles } from 'lucide-react';
 
 const TasksPage: React.FC = () => {
   const navigate = useNavigate();

@@ -44,7 +44,7 @@ const AnalyticsPage: React.FC = () => {
   const firstName = user.user_metadata?.first_name || 'Сотрудник';
   const lastName = user.user_metadata?.last_name || '';
   const fullName = `${firstName} ${lastName}`.trim();
-  const roleDisplay = user.user_metadata?.role === 'company' ? 'Администратор' : 'Сотрудник';
+  const roleDisplay = user.user_metadata?.role === 'teamleader' ? 'Тимлидер' : 'Сотрудник';
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-primary/10">
